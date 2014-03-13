@@ -1,0 +1,11 @@
+#!/usr/bin/env node
+
+var nodeMxmlc = require('../node-mxmlc');
+
+nodeMxmlc.get('4.10.0', function(error, mxmlc) {
+    if (error) {
+        return console.log(error);
+    }
+
+    mxmlc.exec(process.argv.slice(2));
+});

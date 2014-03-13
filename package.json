@@ -1,0 +1,45 @@
+{
+  "name": "node-mxmlc",
+  "description": "A Node.js module to download, \"install\" and use the latest open source Apache/Adobe Flex SDK.",
+  "version": "0.0.1",
+  "sdks": {
+    "4.10.0": {
+      "url": "http://archive.apache.org/dist/flex/4.10.0/binaries/apache-flex-sdk-4.10.0-bin.zip"
+    }
+  },
+  "engines": {
+    "node": ">= 0.8.0"
+  },
+  "main": "./node-mxmlc",
+  "bin": {
+    "mxmlc": "./bin/mxmlc"
+  },
+  "dependencies": {
+    "semver": "^2.2.1",
+    "rimraf": "^2.2.6",
+    "download": "^0.1.10",
+    "filesize": "^2.0.3",
+    "progress": "^1.1.4",
+    "dos2unix": "^1.1.1"
+  },
+  "keywords": [
+    "download",
+    "install",
+    "apache",
+    "adobe",
+    "flex sdk",
+    "open source",
+    "compiler",
+    "flex",
+    "mxml",
+    "actionscript",
+    "flash",
+    "air"
+  ],
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Nicolas Deveaud",
+  "license": "ISC"
+}
