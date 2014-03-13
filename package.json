@@ -1,7 +1,7 @@
 {
   "name": "node-mxmlc",
   "description": "A Node.js module to download, \"install\" and use the latest open source Apache/Adobe Flex SDK.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "sdks": {
     "4.10.0": {
       "url": "http://archive.apache.org/dist/flex/4.10.0/binaries/apache-flex-sdk-4.10.0-bin.zip"
@@ -41,5 +41,13 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Nicolas Deveaud",
-  "license": "ISC"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/LeMisterV/node-mxmlc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/LeMisterV/node-mxmlc/issues"
+  },
+  "homepage": "https://github.com/LeMisterV/node-mxmlc"
 }
