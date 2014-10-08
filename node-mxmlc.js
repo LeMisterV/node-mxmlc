@@ -31,7 +31,11 @@ module.exports = {
         sdkDetails.url = pkg.sdks[sdkDetails.version].url;
 
         sdkDetails.path = path.join(__dirname, 'sdks', sdkDetails.version);
-        sdkDetails.mxmlcPath = path.join(sdkDetails.path, 'bin', 'mxmlc');
+        sdkDetails.mxmlcPath = path.join(
+            sdkDetails.path,
+            pkg.sdks[sdkDetails.version].binpath || 'bin',
+            'mxmlc'
+        );
 
         sdkDetails.exec = childProcess.execFile.bind(childProcess, sdkDetails.mxmlcPath);
 

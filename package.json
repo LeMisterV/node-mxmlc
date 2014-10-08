@@ -7,7 +7,8 @@
       "url": "http://archive.apache.org/dist/flex/4.10.0/binaries/apache-flex-sdk-4.10.0-bin.zip"
     },
     "4.13.0": {
-      "url": "http://archive.apache.org/dist/flex/4.13.0/binaries/apache-flex-sdk-4.13.0-bin.tar.gz"
+      "url": "http://archive.apache.org/dist/flex/4.13.0/binaries/apache-flex-sdk-4.13.0-bin.tar.gz",
+      "binpath": "apache-flex-sdk-4.13.0-bin/bin"
     }
   },
   "engines": {
