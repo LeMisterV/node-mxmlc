@@ -1,161 +1,138 @@
-var childProcess = require('child_process');
-
 var path = require('path');
 var fs = require('fs');
+var childProcess = require('child_process');
 
-var url = require('url');
-var http = require('http');
+var rimraf = require('rimraf');
+
+var rsvp = require('rsvp');
 
 var semver = require('semver');
-var rimraf = require('rimraf');
-var download = require('download');
-var filesize = require('filesize');
-var ProgressBar = require('progress');
-var D2UConverter = require('dos2unix').dos2unix;
+var Download = require('download');
+var progress = require('download-status');
 
-var pkgMeta = require('./package.json');
+var pkg = require('./package.json');
 
 module.exports = {
-    execMxmlc: function execMxmlc(mxmlcPath, args, callback) {
-        var cp = childProcess.execFile(
-            mxmlcPath,
-            args
-        );
-
-        cp.stdout.pipe(process.stdout);
-        cp.stderr.pipe(process.stderr);
-
-        cp.on('exit', function(code, signal) {
-            if (code || signal) {
-                return callback && callback(code || signal);
-            }
-
-            callback && callback();
-        });
-    },
-
     getSdk: function getSdk(version, callback) {
+        var sdkDetails = {};
+
         version = semver.parse(version);
 
         if (!version) {
-            return callback('invalid version (should match SemVer syntax)');
+            throw new Error('Invalid version (should match SemVer syntax)');
         }
 
-        var sdk_path = path.join(__dirname, 'sdks', version.version);
+        sdkDetails.version = version.version;
 
-        var onSuccess = callback.bind(null, null, {
-            path: sdk_path
-        });
+        if (!pkg.sdks || !pkg.sdks[sdkDetails.version]) {
+            throw new Error('Unknown SDK version. You should add it to package.json or ask for another one');
+        }
 
-        var onError = function(msg) {
-            rimraf(sdk_path, function() {
-                console.log('sdk folder deleted');
-            });
-            callback(msg);
-        };
+        sdkDetails.url = pkg.sdks[sdkDetails.version].url;
 
-        fs.stat(sdk_path, function(error, stat) {
-            if (error || !stat.isDirectory()) {
+        sdkDetails.path = path.join(__dirname, 'sdks', sdkDetails.version);
+        sdkDetails.mxmlcPath = path.join(sdkDetails.path, 'bin', 'mxmlc');
 
-                if (pkgMeta.sdks && pkgMeta.sdks[version.version]) {
-                    var progress;
+        sdkDetails.exec = childProcess.execFile.bind(childProcess, sdkDetails.mxmlcPath);
 
-                    download(pkgMeta.sdks[version.version].url, sdk_path, { extract: true })
-                        .on('response', function(response) {
-                            var expectedLength = parseInt(response.headers['content-length'], 10);
-                            progress = new ProgressBar('downloading ' + filesize(expectedLength) + ' [:bar] :percent :etas', {
-                                complete: '=',
-                                incomplete: ' ',
-                                width: 40,
-                                total: expectedLength
-                            });
-                        })
-                        .on('data', function(chunk) {
-                            progress.tick(chunk.length);
-                        })
-                        .on('error', function(error) {
-                            onError('Sdk download error');
-                        })
-                        .on('close', function(file) {
-                            console.log('sdk downloaded');
+        var willGet = rsvp.Promise.resolve()
+            .then(function() {
+                var willCheckInstalled = rsvp.defer();
 
-                            var d2u = new D2UConverter({
-                                glob: {
-                                    cwd: sdk_path
-                                },
-                                maxConcurrency: 100
-                            })
-                            .on('error', function(error) {
-                                onError('Error while converting line-endings');
-                            })
-                            .on('end', function(stats) {
-                                if (stats.error > 0) {
-                                    return onError('Error while converting line-endings');
-                                }
+                fs.stat(sdkDetails.path, function(error, stat) {
+                    sdkDetails.installed = !error && stat.isDirectory();
+                    willCheckInstalled.resolve();
+                });
 
-                                console.log('line-endings converted');
-
-                                if (process.platform !== 'win32') {
-                                    console.log('Enabling execution on mxmlc binary');
-                                    var binaryPath = path.join(sdk_path, 'bin', 'mxmlc');
-                                    fs.stat(binaryPath, function(error, stat) {
-                                        if (error) {
-                                            return onError('Unable to get file stat for mxmlc binary');
-                                        }
-                                        // 64 === 0100 (no octal literal in strict mode)
-                                        if (!(stat.mode & 64)) {
-                                            console.log('Fixing file permissions for: mxmlc binary');
-                                            fs.chmod(binaryPath, '755', function(error) {
-                                                if (error) {
-                                                    return onError('Unable to change permissions for mxmlc binary');
-                                                }
-
-                                                onSuccess();
-                                            });
-                                            return;
-                                        }
-
-                                        onSuccess();
-                                    });
-                                    return;
-                                }
-
-                                onSuccess();
-                            });
-
-                            d2u.process(['**/*']);
-                            console.log('Converting line-endings');
-                        });
-                    return console.log('downloading sdk v' + version.version);
+                return willCheckInstalled.promise;
+            })
+            .then(function() {
+                if (sdkDetails.installed) {
+                    return;
                 }
 
-                return callback('unknown sdk version');
-            }
+                var willDownload = rsvp.defer();
 
-            callback(null, {
-                path: sdk_path
+                var download = new Download({extract: true})
+                    .get(sdkDetails.url)
+                    .dest(sdkDetails.path)
+                    .use(progress());
+
+                download.run(function(error, files) {
+                    if (error) {
+                        return willDownload.reject(error);
+                    }
+
+                    console.log('SDK downloaded successfully.');
+                    willDownload.resolve();
+                });
+
+                return willDownload.promise;
+            })
+            .then(function() {
+                var willCheckMxmlcBinary = rsvp.defer();
+
+                fs.stat(sdkDetails.mxmlcPath, function(error, stat) {
+                    if (error || !stat.isFile()) {
+                        var simpleError = new Error('mxmlc binary not available');
+                        simpleError.parent = error;
+                        return willCheckMxmlcBinary.reject(simpleError);
+                    }
+
+                    sdkDetails.mxmlcBinaryStat = stat;
+
+                    willCheckMxmlcBinary.resolve();
+                });
+
+                return willCheckMxmlcBinary.promise;
+            })
+            .then(function() {
+                if (process.platform === 'win32' || sdkDetails.mxmlcBinaryStat.mode & 64) {
+                    return;
+                }
+
+                console.log('Fix mxmlc binary mode: add execution permission');
+
+                var willFixMxmlcBinary = rsvp.defer();
+
+                fs.chmod(sdkDetails.mxmlcPath, '755', function(error) {
+                    if (error) {
+                        return willFixMxmlcBinary.reject(new Error('Unable to change permissions for mxmlc binary'));
+                    }
+
+                    willFixMxmlcBinary.resolve();
+                });
+
+                return willFixMxmlcBinary.promise;
+            })
+            .catch(function(reason) {
+                rimraf(sdkDetails.path, function() {
+                    console.log('SDK folder removed');
+                });
+                throw reason;
             });
-        }.bind(this));
+
+        if (callback) {
+            willGet
+                .then(function() {
+                    callback(null, sdkDetails);
+                })
+                .catch(function(reason) {
+                    callback(reason);
+                });
+        }
+
+        return willGet
+            .then(function() {
+                return sdkDetails;
+            });
     },
 
-    get: function get(version, callback) {
-        this.getSdk(version, function(error, sdk) {
-            if (error) {
-                return callback(error);
-            }
+    getDefaultVersion: function getDefaultVersion() {
+        if (!pkg.sdks) {
+            throw new Error('package.json should contain a sdks property defining flex sdks available');
+        }
 
-            var mxmlcPath = path.join(sdk.path, 'bin', 'mxmlc');
-
-            fs.stat(mxmlcPath, function(error, stat) {
-                if (error || !stat.isFile()) {
-                    return callback('mxmlc binary unavailable in the sdk');
-                }
-
-                callback(null, {
-                    path: mxmlcPath,
-                    exec: this.execMxmlc.bind(this, mxmlcPath)
-                });
-            }.bind(this));
-        }.bind(this));
+        return Object.keys(pkg.sdks).slice(-1)[0];
     }
 };

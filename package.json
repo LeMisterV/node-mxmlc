@@ -1,10 +1,13 @@
 {
   "name": "node-mxmlc",
   "description": "A Node.js module to download, \"install\" and use the latest open source Apache/Adobe Flex SDK.",
-  "version": "0.0.3",
+  "version": "1.0.0",
   "sdks": {
     "4.10.0": {
       "url": "http://archive.apache.org/dist/flex/4.10.0/binaries/apache-flex-sdk-4.10.0-bin.zip"
+    },
+    "4.13.0": {
+      "url": "http://archive.apache.org/dist/flex/4.13.0/binaries/apache-flex-sdk-4.13.0-bin.tar.gz"
     }
   },
   "engines": {
@@ -15,12 +18,12 @@
     "mxmlc": "./bin/mxmlc"
   },
   "dependencies": {
-    "semver": "~2.2.1",
-    "rimraf": "~2.2.6",
-    "download": "~0.1.10",
-    "filesize": "~2.0.3",
-    "progress": "~1.1.4",
-    "dos2unix": "~1.1.1"
+    "commander": "2.x.x",
+    "download": "3.x.x",
+    "download-status": "2.x.x",
+    "rimraf": "2.x.x",
+    "rsvp": "3.x.x",
+    "semver": "4.x.x"
   },
   "keywords": [
     "download",

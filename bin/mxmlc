@@ -1,11 +1,64 @@
 #!/usr/bin/env node
 
+var program = require('commander');
+
 var nodeMxmlc = require('../node-mxmlc');
 
-nodeMxmlc.get('4.10.0', function(error, mxmlc) {
-    if (error) {
-        return console.log(error);
-    }
+var pkg = require('../package.json');
 
-    mxmlc.exec(process.argv.slice(2));
-});
+program
+  .version(pkg.version)
+  .description('Flex SDK (mxmlc) handler for node')
+  .option('-s, --sdk [version]', 'Expected SDK version', nodeMxmlc.getDefaultVersion());
+
+program
+  .command('install')
+  .description('Install SDK')
+  .action(function(cmd) {
+    console.log('Install Flex SDK ', cmd.parent.sdk);
+
+    nodeMxmlc.getSdk(cmd.parent.sdk)
+      .then(function(sdk) {
+        console.log('Flex SDK ' + sdk.version + ' installed.');
+      })
+      .catch(function(reason) {
+        console.log('Error while getting SDK');
+        console.log(reason);
+        process.exit(1);
+      });
+  });
+
+program
+  .command('compile')
+  .description('Execute mxmlc with given parameters')
+  .action(function(cmd) {
+    console.log('Execute Flex SDK compile process');
+
+    nodeMxmlc.getSdk(cmd.parent.sdk)
+      .then(function(sdk) {
+        compile_process = sdk.exec(cmd);
+        compile_process.stdout.pipe(process.stdout);
+        compile_process.stderr.pipe(process.stderr);
+
+        compile_process.on('exit', function(code, signal) {
+          if (code === 0) {
+            console.log('Mxmlc execution finnished with success.');
+          }
+
+          if (!signal) {
+            process.exit(code);
+          }
+        });
+      })
+      .catch(function(reason) {
+        console.log('Error while getting SDK');
+        console.log(reason);
+        process.exit(1);
+      });
+  });
+
+program.parse(process.argv);
+
+if (typeof program.args.slice(-1)[0] !== 'object') {
+  program.help();
+}
