@@ -7,8 +7,11 @@ var rimraf = require('rimraf');
 var rsvp = require('rsvp');
 
 var semver = require('semver');
-var Download = require('download');
-var progress = require('download-status');
+
+var download = require('download');
+var ProgressBar = require('progress');
+var filesize = require('filesize');
+
 
 var pkg = require('./package.json');
 
@@ -57,19 +60,29 @@ module.exports = {
 
                 var willDownload = rsvp.defer();
 
-                var download = new Download({extract: true})
-                    .get(sdkDetails.url)
-                    .dest(sdkDetails.path)
-                    .use(progress());
-
-                download.run(function(error, files) {
-                    if (error) {
-                        return willDownload.reject(error);
-                    }
-
-                    console.log('SDK downloaded successfully.');
-                    willDownload.resolve();
-                });
+                download(sdkDetails.url, sdkDetails.path, { extract: true })
+                    .on('response', function(response) {
+                        var expectedLength = parseInt(response.headers['content-length'], 10);
+                        progress = new ProgressBar(
+                            'downloading ' + filesize(expectedLength) + ' [:bar] :percent :etas',
+                            {
+                                complete: '=',
+                                incomplete: ' ',
+                                width: 40,
+                                total: expectedLength
+                            }
+                        );
+                    })
+                    .on('data', function(chunk) {
+                        progress.tick(chunk.length);
+                    })
+                    .on('error', function(error) {
+                        willDownload.reject(error);
+                    })
+                    .on('close', function(file) {
+                        console.log('SDK downloaded successfully.');
+                        willDownload.resolve();
+                    });
 
                 return willDownload.promise;
             })

@@ -20,8 +20,9 @@
   },
   "dependencies": {
     "commander": "2.x.x",
-    "download": "3.x.x",
-    "download-status": "2.x.x",
+    "download": "^0.1.10",
+    "filesize": "^2.0.3",
+    "progress": "^1.1.4",
     "rimraf": "2.x.x",
     "rsvp": "3.x.x",
     "semver": "4.x.x"
