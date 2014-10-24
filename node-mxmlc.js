@@ -40,7 +40,7 @@ module.exports = {
             'mxmlc'
         );
 
-        sdkDetails.exec = childProcess.execFile.bind(childProcess, sdkDetails.mxmlcPath);
+        sdkDetails.exec = childProcess.spawn.bind(childProcess, sdkDetails.mxmlcPath);
 
         var willGet = rsvp.Promise.resolve()
             .then(function() {
@@ -121,6 +121,9 @@ module.exports = {
                 });
 
                 return willFixMxmlcBinary.promise;
+            })
+            .then(function() {
+                sdkDetails.installed = true;
             })
             .catch(function(reason) {
                 rimraf(sdkDetails.path, function() {
