@@ -40,7 +40,14 @@ module.exports = {
             'mxmlc'
         );
 
-        sdkDetails.exec = childProcess.spawn.bind(childProcess, sdkDetails.mxmlcPath);
+        if (process.platform === 'win32') {
+            sdkDetails.mxmlcPath += '.bat';
+        }
+
+        sdkDetails.exec = function(args) {
+            // Use exec instead of spawn because it won't work with spawn on Windows
+            return childProcess.exec(sdkDetails.mxmlcPath + ' ' + args.join(' '), function() {});
+        };
 
         var willGet = rsvp.Promise.resolve()
             .then(function() {
