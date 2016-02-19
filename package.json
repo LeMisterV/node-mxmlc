@@ -1,7 +1,7 @@
 {
   "name": "node-mxmlc",
   "description": "A Node.js module to download, \"install\" and use the latest open source Apache/Adobe Flex SDK.",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "sdks": {
     "4.10.0": {
       "url": "http://archive.apache.org/dist/flex/4.10.0/binaries/apache-flex-sdk-4.10.0-bin.zip"
